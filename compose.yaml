@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  # ------------------
+  # Your Spring Boot Application
+  # ------------------
+  app:
+    # Build the image using the Dockerfile in the current directory
+    build: .
+    container_name: sensorhub-app
+    restart: on-failure
+    ports:
+      # Map host port 8080 to container port 8080
+      - "8085:8085"
+    depends_on:
+      # Ensure mongodb and rabbitmq start before the application
+      - mongodb
+      - rabbitmq
+    environment:
+      # Connection details passed to Spring Boot
+      - SPRING_DATA_MONGODB_URI=mongodb://mongodb:27017/sensorhub
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_RABBITMQ_PORT=5672
+      - SPRING_RABBITMQ_USERNAME=esgi_user
+      - SPRING_RABBITMQ_PASSWORD=xFUM9as17fJxTP5teKGa
+      # The specific queue for your group (e.g., sensor_group1)
+      - SENSORHUB_RABBITMQ_QUEUE=sensor_group5
+
+  # ------------------
+  # MongoDB Database
+  # ------------------
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    ports:
+      # Expose MongoDB port to the host for optional external access/debugging
+      - "27017:27017"
+    volumes:
+      # Persist database data on the host machine
+      - mongo-data:/data/db
+    restart: always
+
+  # ------------------
+  # RabbitMQ Message Broker
+  # ------------------
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      # Port for the application to connect
+      - "5672:5672"
+      # Port for the web management UI (accessible at http://localhost:15672)
+      - "15672:15672"
+    environment:
+      # Credentials provided in the challenge
+      - RABBITMQ_DEFAULT_USER=esgi_user
+      - RABBITMQ_DEFAULT_PASS=xFUM9as17fJxTP5teKGa
+    restart: always
+
+# Define the named volume for data persistence
+volumes:
+  mongo-data:
